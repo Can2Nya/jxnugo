@@ -5,7 +5,7 @@ from . import trade
 from .. import db
 from flask.ext.login import login_required,current_user
 from ..models import Permission,User,Role,Post,Comment,getPrimaryKeyId
-from forms import PostForm,CommentForm, SearchForm
+from forms import PostForm,CommentForm, SearchForm , deleteForm
 from json import loads
 
 
@@ -33,11 +33,11 @@ def trade_post():
         photo = ":".join(l)
         post = Post(id=getPrimaryKeyId('isPost'), body=form.body.data, goodName=form.name.data, goodPrice=form.price.data,
                   goodNum=form.num.data, goodLocation=form.location.data, goodQuality=form.quality.data,
-                  goodTag=form.tag.data, contact=form.mycontact.data, photos=photo, author_id=current_user.id)
+                  goodTag=form.tag.data, contact=form.mycontact.data, goodBuyTime=form.buyTime.data,  photos=photo, author_id=current_user.id)
         db.session.add(post)
         db.session.commit()
         flash(u'帖子发布成功')
-        return redirect(url_for('trade.trade_list')) # 感觉 返回列表会好一些
+        return redirect(url_for('trade.trade_list'))  # 感觉 返回列表会好一些
     return render_template('trade/trade_post.html', form=form)
 
 
@@ -72,7 +72,7 @@ def trade_detail(goodId):
 @trade.route('/collect/<pid>',methods=['GET'])
 @login_required
 def collect(pid):
-    post=Post.query.filter_by(id=pid).first()
+    post = Post.query.filter_by(id=pid).first()
     if post is None:
         flash(u'该帖子不存在')
     if current_user.is_collecting(post):
@@ -129,32 +129,22 @@ def moderate_disable(id):
                             page=request.args.get('page', 1, type=int)), )
 
 
-@trade.route('/post_delete/<int:pid>')
-@login_required
-def post_delete(pid):
-    post = Post.query.filter_by(id=pid).first()
-    if post is None:
-        flash(u"未查询到该篇帖子信息")
-        return redirect(url_for('.trade_list'))
-    else:
-        db.session.delete(post)
-        db.session.commit()
-        flash(u'该帖子已经成功删除')
-    return redirect(url_for('.trade_list'))
-
-
 @trade.route('/query_post/<problem>')
 def query_post(problem):
-    queryname=problem
-    page = request.args.get('page', 1, type=int)
-    pagination = Post.query.filter(Post.goodName.like('%'+queryname+'%')).paginate(
-        page, per_page=current_app.config['JXNUGO_POSTS_PER_PAGE'],
-        error_out=False
-    )
+    queryname = problem
+    print queryname
+    if queryname == '':
+        flash('请输入关键字后再进行查询操作')
+        return redirect(url_for('.trade_list'))
+    else:
+        page = request.args.get('page', 1, type=int)
+        pagination = Post.query.filter(Post.goodName.like('%'+queryname+'%')).paginate(
+            page, per_page=current_app.config['JXNUGO_POSTS_PER_PAGE'],
+            error_out=False
+        )
     
-    posts = pagination.items
-    return render_template('trade/query_posts.html', posts=posts, pagination=pagination,problem=problem)
-
+        posts = pagination.items
+        return render_template('trade/query_posts.html', posts=posts, pagination=pagination,problem=problem)
 
 
 @trade.route('/post_category/<posttag>')
@@ -166,3 +156,51 @@ def post_category(posttag):
     )
     posts = pagination.items
     return render_template('trade/trade_list.html', posts=posts, pagination=pagination)
+
+
+@trade.route('/post_delete', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def post_delete():
+    delete_postid = deleteForm()
+    if delete_postid.validate_on_submit():
+        pid = delete_postid.pid.data
+        p = Post.query.filter_by(id=pid).first()
+        if p is None:
+            flash(u'该帖子不存在')
+        else:
+            comments = Comment.query.filter_by(post_id=p.id).all()  # 删除评论
+            for comment in comments:
+                db.session.delete(comment)
+            all_user = User.query.all()     # 删除收藏的关系
+            for user in all_user:
+                if p in user.collectionPost.all():
+                    user.collectionPost.remove(p)
+                else:
+                    pass
+            db.session.delete(p)
+            db.session.commit()
+            flash(u'帖子及其评论删除成功')
+    return render_template('trade/post_delete.html', form=delete_postid)
+
+
+@trade.route('/delete_self_post/<int:pid>')
+@login_required
+def delete_self_post(pid):
+    p = Post.query.filter_by(id=pid).first()
+    if p is None:
+        flash(u'该帖子不存在')
+    else:
+        comments = Comment.query.filter_by(post_id=p.id).all()  # 删除评论
+        for comment in comments:
+            db.session.delete(comment)
+        all_user = User.query.all()     # 删除收藏的关系
+        for user in all_user:
+            if p in user.collectionPost.all():
+                user.collectionPost.remove(p)
+            else:
+                pass
+        db.session.delete(p)
+        db.session.commit()
+        flash(u'帖子及其评论删除成功')
+    return redirect(url_for('trade.trade_list'))

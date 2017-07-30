@@ -73,7 +73,7 @@ def new_comment():
     commentInfo = request.json
     if commentInfo['body'] == '':
         return  bad_request('body was empty')
-    comment = Comment(id=Comment.query.count() + 1, body=commentInfo['body'], author_id=commentInfo['userId'],
+    comment = Comment(body=commentInfo['body'], author_id=commentInfo['userId'],
                           post_id=commentInfo['postId'])
     db.session.add(comment)
     db.session.commit()
@@ -121,15 +121,24 @@ def new_post():
     return response
 
 
-@api.route('/api/delete_post', methods=['DELETE'])
+@api.route('/api/delete_post', methods=['POST'])
 @auth.login_required
 def delete_post():
     postInfo = request.json
-    post = Post.query.get_or_404(postInfo['postId'])
-    if post is None:
+    p = Post.query.get_or_404(postInfo['postId'])
+    if p is None:
         message = "the post dosen't exist"
     else:
-        db.session.delete(post)
+        all_comments = Comment.query.filter_by(post_id=p.id).all()  # 删除评论
+        for comment in all_comments:
+            db.session.delete(comment)
+        all_user = User.query.all()     # 删除收藏的关系
+        for user in all_user:
+            if p in user.collectionPost.all():
+                user.collectionPost.remove(p)
+            else:
+                pass
+        db.session.delete(p)
         db.session.commit()
         message = "successful delete post"
     response = jsonify({"deleteStatus": message})

@@ -30,7 +30,7 @@
 <div class="ui-shownav row">
     <div class="nav-content">
         <div class=" col-xs-2">
-            <img src="{{ url_for( 'main.staticfile',filename='images/index/JXNU_index.png' )}}" style="width:150px">
+            <img src="http://o8evkf73q.bkt.clouddn.com/image/index/JXNU_index.png" style="width:150px">
         </div>
         <a href="{{url_for('trade.trade_list')}}"><div class=" text">淘二手</div></a>
         <a href="#"><div class="text">教务助手</div></a>
@@ -83,6 +83,8 @@
                     {% if current_user.role_id==2 %}
                     <a href="{{ url_for('main.show_user') }}">
                     <div class="item case-in">用户管理</div></a>
+                    <a href="{{ url_for('trade.post_delete') }}">
+                    <div class="item case-in">帖子管理</div></a>
                     {% endif %}
                     <a href="{{url_for('auth.logout')}}">
                     <div class="item case-in">登出</div></a>
@@ -159,6 +161,43 @@
 </div>
 {% endfor %}
 {% endmacro %}
+
+{% macro datalinepannel(posts,model,current_user,user)%}
+{% for post in posts %}
+
+            <div class="ui-userzone-content-datelinebody row">
+                <div class="col-xs-1">
+                    <div class="dot"></div>
+                </div>
+                <div class="col-xs-11">
+                    <div class="row">
+                        <div class="col-xs-4">
+                            <div class="smImg" style="background-image:url('http://7xrkww.com1.z0.glb.clouddn.com/{{post.photos | getFirstKey}}')"></div>
+                        </div>
+                        <div class="col-xs-8">
+                            <div class="row">
+                                <div class="title"><a href="{{ url_for('trade.trade_detail',goodId=post.id) }}">{{post.goodName}}</a>
+                                    {% if current_user.userName==user.userName %}
+                                    <a href="{{url_for(model,pid=post.id)}}">
+                                    <span class="glyphicon glyphicon-trash" style="font-size: 0.9em;color: #FF7C6A;"></span>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="date"><span class="glyphicon glyphicon-time"></span> {{post.timestamp | utcChangeToCst}}</div>
+                            </div>
+                            <div class="row">
+                                <div class="text">{{post.body}}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end-->
+{% endfor %}
+{% endmacro %}
+
 {% macro footer()%}
 <footer class="ui-footer">
         <div class="ui-mainct">
@@ -166,7 +205,7 @@
                 <div class="col-sm-3">
                     <div class="title">app下载</div>
                     <div class="qrcode center-align" style="background-image:url()">
-                        <img src="{{url_for('main.staticfile',filename='images/qrcode.png')}}" style="width:150px;"></div>
+                        <img src="{{url_for('main.staticfile',filename='images/ac_qiniu.png')}}" style="width:150px;"></div>
                 </div>
                 <div class="col-sm-3">
                     <dl>
@@ -180,39 +219,22 @@
                 <div class="col-sm-3">
                     <dl>
                         <dt class="title">关于我们</dt>
-                        <dd><a href="http://fir.im/AwesomeCampus">师大＋</a></dd>
-                        <dd><a href="">jxnugo</a></dd>
+                        <dd><a href="{{url_for('main.about_us')}}">JxnuGo</a></dd>
+                        <dd><a href="http://ofr7rph45.bkt.clouddn.com/AwesomeCampus_V1.3.0_VC7.apk">下载师大＋</a></dd>
+                        <dd><a href="{{url_for('main.notice') }}">用户使用协议</a> </dd>
                     </dl>
                     
                     
                 </div>
                 <div class="col-sm-3">
                     <div>
-                        <img src="http://7xrkww.com1.z0.glb.clouddn.com/JXNU_s.png">
+                        <img src="http://o8evkf73q.bkt.clouddn.com/image/JXNU_origin_s.png">
                     </div>
-                    <div class="title bdsharebuttonbox">share us with
-                        <a href="#" data-cmd="qzone" title="分享到QQ空间"><span class="fa fa-qq"></span></a>
-                        <a href="#" data-cmd="tsina" title="分享到新浪微博"><span class="fa fa-weibo"></span></a>
-                        <a href="#"  data-cmd="weixin" title="分享到微信"><span class="fa fa-wechat"></span></a>
+                    <div class="title bdsharebuttonbox" data-tag="footer">share us with
+                        <a href="#" class="fa fa-qq" data-cmd="qzone" title="分享到QQ空间"></a>
+                        <a href="#" class="fa fa-weibo" data-cmd="tsina" title="分享到新浪微博"></a>
+                        <a href="#" class="fa fa-wechat" data-cmd="weixin" title="分享到微信"></a>
                     </div>
-                    <script>
-                    window._bd_share_config = {
-                        "common": {
-                            "bdSnsKey": {},
-                            "bdText": "发现了一个掉节操的地方--jxnugo",
-                            "bdMini": "2",
-                            "bdMiniList": false,
-                            "bdPic": "",
-                            "bdStyle": "2",
-                            "bdSize": "32"
-                        },
-                        "share": {
-                            "bdCustomStyle":"{{url_for( 'main.staticfile',filename='font-awesome/css/font-awesome.min.css' )}}"
-                        }
-                    };
-                    with(document) 0[(getElementsByTagName('head')[0] || body).appendChild(createElement('script')).src = 'http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion=' + ~(-new Date() / 36e5)];
-                    </script>
-                    <div class="title" style="margin-left:0;"></div>
                 </div>
             </div>
 
